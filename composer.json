@@ -1,0 +1,48 @@
+{
+    "name": "tttptd/laravel-doctrine-odm",
+    "description": "Doctrine MongoDB ODM integration for Laravel",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "doctrine",
+        "doctrine-odm",
+        "laravel",
+        "mongodb",
+        "odm"
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-mongodb": "*",
+        "doctrine/annotations": "^2.0",
+        "doctrine/mongodb-odm": "^2.11.3",
+        "gedmo/doctrine-extensions": "^3.15",
+        "laravel/framework": "^11.0 || ^12.0",
+        "predis/predis": "^3.2",
+        "symfony/cache": "^7.3",
+        "symfony/console": "^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ys\\LaravelOdm\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ys\\LaravelOdm\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ys\\LaravelOdm\\DoctrineMongoDBServiceProvider"
+            ]
+        }
+    }
+}
