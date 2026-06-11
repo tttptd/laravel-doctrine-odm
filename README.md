@@ -21,6 +21,7 @@ This package started as a fork of [chefsplate/laravel-doctrine-odm](https://gith
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Document Path Registry](#document-path-registry)
 - [Usage](#usage)
 - [Artisan Commands](#artisan-commands)
 - [Testing](#testing)
@@ -64,7 +65,7 @@ Then enable it in your PHP configuration if your environment does not do that au
 Install the package from Packagist:
 
 ```bash
-composer require tttptd/laravel-doctrine-odm:^0.1
+composer require tttptd/laravel-doctrine-odm:^0.1.1
 ```
 
 Laravel package discovery registers the service provider automatically:
@@ -144,6 +145,47 @@ DOCTRINE_PROXY_AUTOGENERATE=2
 ```
 
 `2` means `Configuration::AUTOGENERATE_FILE_NOT_EXISTS`. The package also supports `3`, `Configuration::AUTOGENERATE_EVAL`, which is useful only for development.
+
+## Document Path Registry
+
+`Ys\LaravelOdm\ODM\DocumentPathRegistry` is the public extension point for ODM
+document paths owned by Laravel packages.
+
+The host `config/mongodb.php` should describe only host-owned documents:
+
+```php
+'documents' => [
+    base_path('app/Documents'),
+    base_path('bbs'),
+],
+```
+
+Reusable packages should not require the host application to hardcode
+`vendor/<package>/...` paths. Instead, a package service provider can add its
+document root through the registry:
+
+```php
+use Ys\LaravelOdm\ODM\DocumentPathRegistry;
+
+$this->callAfterResolving(
+    DocumentPathRegistry::class,
+    static fn(DocumentPathRegistry $registry) =>
+        $registry->addDocumentPath(__DIR__ . '/../Domain/Entities'),
+);
+```
+
+The registry is seeded from `mongodb.paths.documents` and
+`mongodb.paths.exclude_documents` first. Package providers append their own
+paths afterwards, so the metadata driver receives:
+
+```text
+host config paths + package registered paths
+```
+
+`config/mongodb.php` does not overwrite package paths because it is only the
+initial source used to create the registry. The final Doctrine `AttributeDriver`
+is built from the registry after Laravel package providers have had a chance to
+register additional paths.
 
 ## Usage
 

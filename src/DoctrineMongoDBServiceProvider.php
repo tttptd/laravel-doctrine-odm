@@ -23,6 +23,7 @@ use Ys\LaravelOdm\Commands\LaravelQueryCommand;
 use Ys\LaravelOdm\Commands\LaravelShardCommand;
 use Ys\LaravelOdm\Commands\LaravelUpdateCommand;
 use Ys\LaravelOdm\ODM\CacheAdapterFactory;
+use Ys\LaravelOdm\ODM\DocumentPathRegistry;
 use Ys\LaravelOdm\ODM\DocumentManagerFactory;
 use function config;
 use const PHP_VERSION_ID;
@@ -39,6 +40,7 @@ class DoctrineMongoDBServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfig();
+        $this->registerDocumentPathRegistry();
         $this->registerDocumentManager();
         $this->registerConsoleCommands();
 
@@ -93,10 +95,33 @@ class DoctrineMongoDBServiceProvider extends ServiceProvider
         );
     }
 
+    private function registerDocumentPathRegistry(): void
+    {
+        $this->app->singleton(DocumentPathRegistry::class, static function() {
+            $paths = config('mongodb.paths', []);
+            $registry = new DocumentPathRegistry();
+
+            foreach ($paths['documents'] ?? [] as $path) {
+                if (is_string($path)) {
+                    $registry->addDocumentPath($path);
+                }
+            }
+
+            foreach ($paths['exclude_documents'] ?? [] as $path) {
+                if (is_string($path)) {
+                    $registry->addExcludePath($path);
+                }
+            }
+
+            return $registry;
+        });
+    }
+
     private function registerDocumentManager(): void
     {
-        $this->app->singleton(DocumentManagerFactory::class, static function() {
+        $this->app->singleton(DocumentManagerFactory::class, static function($app) {
             $appConfig = config('mongodb');
+            $documentPathRegistry = $app->make(DocumentPathRegistry::class);
 
             // Define our global cache backend for the application.
             // For larger applications, you may use multiple cache pools to store cacheable data in different locations.
@@ -113,9 +138,9 @@ class DoctrineMongoDBServiceProvider extends ServiceProvider
             $config->setProxyNamespace($paths['proxies']['namespace']);
             $config->setHydratorDir($paths['hydrators']['path']);
             $config->setHydratorNamespace($paths['hydrators']['namespace']);
-            $metadataDriver = AttributeDriver::create($paths['documents']);
-            if (! empty($paths['exclude_documents'])) {
-                $metadataDriver->addExcludePaths($paths['exclude_documents']);
+            $metadataDriver = AttributeDriver::create($documentPathRegistry->documentPaths());
+            if ($documentPathRegistry->excludePaths() !== []) {
+                $metadataDriver->addExcludePaths($documentPathRegistry->excludePaths());
             }
             $config->setMetadataDriverImpl($metadataDriver);
             $config->setAutoGenerateProxyClasses((int)$paths['proxies']['auto_generate']);

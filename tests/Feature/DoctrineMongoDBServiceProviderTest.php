@@ -6,9 +6,12 @@ namespace Ys\LaravelOdm\Tests\Feature;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Illuminate\Support\ServiceProvider;
 use Ys\LaravelOdm\DoctrineMongoDBServiceProvider;
+use Ys\LaravelOdm\ODM\DocumentPathRegistry;
 use Ys\LaravelOdm\ODM\DocumentManagerFactory;
 use Ys\LaravelOdm\ODM\PersistenceManager;
 use Ys\LaravelOdm\Tests\Fixtures\Documents\TestArticle;
+use Ys\LaravelOdm\Tests\Fixtures\PackageDocuments\TestPackagePage;
+use Ys\LaravelOdm\Tests\Fixtures\TestPackageDocumentPathServiceProvider;
 use Ys\LaravelOdm\Tests\TestCase;
 
 final class DoctrineMongoDBServiceProviderTest extends TestCase
@@ -52,6 +55,18 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
         self::assertSame($documentManager, $this->readObjectProperty($persistenceManager, 'dm'));
     }
 
+    public function testDocumentPathRegistryIsSeededFromMongoDbConfig(): void
+    {
+        $registry = $this->app->make(DocumentPathRegistry::class);
+
+        self::assertSame([
+            realpath(__DIR__ . '/../Fixtures/Documents'),
+        ], $registry->documentPaths());
+        self::assertSame([
+            realpath(__DIR__ . '/../Fixtures/ExcludedDocuments'),
+        ], $registry->excludePaths());
+    }
+
     public function testDocumentManagerUsesConfiguredDoctrinePathsAndDatabase(): void
     {
         $documentManager = $this->app->make(DocumentManager::class);
@@ -74,6 +89,23 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
         self::assertArrayHasKey('title', $metadata->fieldMappings);
     }
 
+    public function testDocumentMetadataCanBeLoadedFromPackageRegisteredDocumentPaths(): void
+    {
+        $this->app->register(TestPackageDocumentPathServiceProvider::class);
+
+        $registry = $this->app->make(DocumentPathRegistry::class);
+        self::assertSame([
+            realpath(__DIR__ . '/../Fixtures/Documents'),
+            realpath(__DIR__ . '/../Fixtures/PackageDocuments'),
+        ], $registry->documentPaths());
+
+        $documentManager = $this->app->make(DocumentManager::class);
+        $metadata = $documentManager->getClassMetadata(TestPackagePage::class);
+
+        self::assertSame('test_package_pages', $metadata->getCollection());
+        self::assertArrayHasKey('title', $metadata->fieldMappings);
+    }
+
     private function readObjectProperty(object $object, string $property): mixed
     {
         $reflection = new \ReflectionObject($object);
@@ -82,4 +114,3 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
         return $propertyReflection->getValue($object);
     }
 }
-
