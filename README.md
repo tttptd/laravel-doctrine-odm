@@ -48,7 +48,7 @@ The package registers `DocumentManager` and `PersistenceManager` as scoped servi
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11 or 12
+- Laravel 12
 - MongoDB PHP extension
 - MongoDB server
 
