@@ -29,7 +29,7 @@ class LaravelUpdateCommand extends UpdateCommand
         $doctrineCommand = new UpdateCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }

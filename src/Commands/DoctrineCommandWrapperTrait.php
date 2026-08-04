@@ -22,12 +22,20 @@ trait DoctrineCommandWrapperTrait
         $doctrineCommand->setHelperSet($helperSet);
     }
 
-    private function removeCommandFromInputArgs(InputInterface $input): InputInterface
+    private function removeCommandFromInputArgs(InputInterface $input, Command $doctrineCommand): InputInterface
     {
-        // Убираем саму команду из аргументов
         $inputArgs = $input->getArguments();
         unset($inputArgs['command']);
 
-        return new ArrayInput($inputArgs);
+        foreach ($input->getOptions() as $name => $value) {
+            // Laravel добавляет глобальные опции, которых нет у нативной Doctrine-команды.
+            if (! $doctrineCommand->getDefinition()->hasOption($name) || $value === false || $value === null) {
+                continue;
+            }
+
+            $inputArgs['--' . $name] = $value;
+        }
+
+        return new ArrayInput($inputArgs, $doctrineCommand->getDefinition());
     }
 }

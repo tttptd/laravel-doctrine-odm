@@ -41,7 +41,7 @@ class LaravelDropCommand extends DropCommand
         $doctrineCommand = new DropCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }

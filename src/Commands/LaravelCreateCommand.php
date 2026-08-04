@@ -29,7 +29,7 @@ class LaravelCreateCommand extends CreateCommand
         $doctrineCommand = new CreateCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }

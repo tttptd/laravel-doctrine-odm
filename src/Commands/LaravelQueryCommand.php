@@ -29,7 +29,7 @@ class LaravelQueryCommand extends QueryCommand
         $doctrineCommand = new QueryCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }

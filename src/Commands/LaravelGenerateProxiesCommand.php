@@ -29,7 +29,7 @@ class LaravelGenerateProxiesCommand extends GenerateProxiesCommand
         $doctrineCommand = new GenerateProxiesCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }

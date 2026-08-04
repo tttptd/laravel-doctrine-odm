@@ -29,7 +29,7 @@ class LaravelGenerateHydratorsCommand extends GenerateHydratorsCommand
         $doctrineCommand = new GenerateHydratorsCommand();
 
         $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input);
+        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
 
         return $doctrineCommand->run($filteredInput, $output);
     }
