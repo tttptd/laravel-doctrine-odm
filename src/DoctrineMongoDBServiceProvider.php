@@ -144,6 +144,9 @@ class DoctrineMongoDBServiceProvider extends ServiceProvider
             }
             $config->setMetadataDriverImpl($metadataDriver);
             $config->setAutoGenerateProxyClasses((int)$paths['proxies']['auto_generate']);
+            $config->setAutoGenerateHydratorClasses((int)(
+                $paths['hydrators']['auto_generate'] ?? Configuration::AUTOGENERATE_ALWAYS
+            ));
             $config->setMetadataCache($cache);
             $config->setUseTransactionalFlush($appConfig['use_transactional_flush'] ?? false);
 

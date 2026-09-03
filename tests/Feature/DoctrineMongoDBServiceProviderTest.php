@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ys\LaravelOdm\Tests\Feature;
 
+use Doctrine\ODM\MongoDB\Configuration;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Illuminate\Support\ServiceProvider;
 use Ys\LaravelOdm\DoctrineMongoDBServiceProvider;
@@ -78,6 +79,18 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
         self::assertSame(sys_get_temp_dir() . '/laravel-odm-test/hydrators', $configuration->getHydratorDir());
         self::assertSame('LaravelOdmTestHydrators', $configuration->getHydratorNamespace());
         self::assertSame(3, $configuration->getAutoGenerateProxyClasses());
+        self::assertSame(Configuration::AUTOGENERATE_NEVER, $configuration->getAutoGenerateHydratorClasses());
+    }
+
+    public function testUsesDoctrineDefaultWhenLegacyConfigHasNoHydratorAutoGenerationMode(): void
+    {
+        $hydrators = $this->app['config']->get('mongodb.paths.hydrators');
+        unset($hydrators['auto_generate']);
+        $this->app['config']->set('mongodb.paths.hydrators', $hydrators);
+
+        $configuration = $this->app->make(DocumentManager::class)->getConfiguration();
+
+        self::assertSame(Configuration::AUTOGENERATE_ALWAYS, $configuration->getAutoGenerateHydratorClasses());
     }
 
     public function testDocumentMetadataCanBeLoadedFromConfiguredDocumentPaths(): void

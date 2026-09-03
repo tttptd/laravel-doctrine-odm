@@ -46,6 +46,13 @@ return [
         'hydrators' => [
             'namespace' => 'Hydrators',
             'path' => storage_path('mongo_hydrators'),
+
+            // В production с предгенерацией используйте AUTOGENERATE_NEVER,
+            // чтобы Doctrine не пыталась писать в файловую систему во время запроса.
+            'auto_generate' => env(
+                'DOCTRINE_HYDRATOR_AUTOGENERATE',
+                \Doctrine\ODM\MongoDB\Configuration::AUTOGENERATE_ALWAYS,
+            ),
         ],
 
         // TODO: support multiple metadata implementations

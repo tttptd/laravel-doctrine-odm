@@ -135,8 +135,19 @@ Proxy and hydrator files are generated into:
 'hydrators' => [
     'namespace' => 'Hydrators',
     'path' => storage_path('mongo_hydrators'),
+    'auto_generate' => env(
+        'DOCTRINE_HYDRATOR_AUTOGENERATE',
+        \Doctrine\ODM\MongoDB\Configuration::AUTOGENERATE_ALWAYS,
+    ),
 ],
 ```
+
+Для образа с заранее созданными гидраторами задайте
+`DOCTRINE_HYDRATOR_AUTOGENERATE=0`. Это режим
+`Configuration::AUTOGENERATE_NEVER`: во время запроса Doctrine только загружает
+готовые файлы и не пытается изменять файловую систему production-контейнера.
+Значение по умолчанию остаётся `Configuration::AUTOGENERATE_ALWAYS` для
+совместимости с приложениями, которые генерируют гидраторы во время выполнения.
 
 For production, disable automatic proxy generation and generate proxies during deploy:
 

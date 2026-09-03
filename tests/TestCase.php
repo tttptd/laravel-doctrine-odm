@@ -31,7 +31,7 @@ abstract class TestCase extends OrchestraTestCase
         $app['config']->set('mongodb.paths.proxies.auto_generate', 3);
         $app['config']->set('mongodb.paths.hydrators.path', sys_get_temp_dir() . '/laravel-odm-test/hydrators');
         $app['config']->set('mongodb.paths.hydrators.namespace', 'LaravelOdmTestHydrators');
+        $app['config']->set('mongodb.paths.hydrators.auto_generate', '0');
         $app['config']->set('mongodb.use_transactional_flush', true);
     }
 }
-

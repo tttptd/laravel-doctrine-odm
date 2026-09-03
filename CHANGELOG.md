@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Добавлена настройка `mongodb.paths.hydrators.auto_generate` для управления
+  режимом генерации гидраторов Doctrine ODM.
+
 ## 0.1.2
 
 - Forward supported Artisan command options to the wrapped native Doctrine command.
