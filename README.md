@@ -176,14 +176,25 @@ Reusable packages should not require the host application to hardcode
 document root through the registry:
 
 ```php
+use Illuminate\Support\ServiceProvider;
 use Ys\LaravelOdm\ODM\DocumentPathRegistry;
 
-$this->callAfterResolving(
-    DocumentPathRegistry::class,
-    static fn(DocumentPathRegistry $registry) =>
-        $registry->addDocumentPath(__DIR__ . '/../Domain/Entities'),
-);
+final class PackageServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->callAfterResolving(
+            DocumentPathRegistry::class,
+            static fn(DocumentPathRegistry $registry) =>
+                $registry->addDocumentPath(__DIR__ . '/../Domain/Entities'),
+        );
+    }
+}
 ```
+
+Регистрируйте callback именно в `register()` через защищённый helper
+`ServiceProvider::callAfterResolving()`, до первого разрешения
+`DocumentManager`. Вызова `$this->app->callAfterResolving()` у контейнера нет.
 
 The registry is seeded from `mongodb.paths.documents` and
 `mongodb.paths.exclude_documents` first. Package providers append their own
@@ -197,6 +208,16 @@ host config paths + package registered paths
 initial source used to create the registry. The final Doctrine `AttributeDriver`
 is built from the registry after Laravel package providers have had a chance to
 register additional paths.
+
+Пакет-владелец моделей отвечает только за объявление своего пути через provider.
+Host не перечисляет физические `vendor/...` пути: он один раз выполняет общую
+сборочную команду для собственных и пакетных моделей:
+
+```bash
+php artisan odm:generate:hydrators
+```
+
+В production с `AUTOGENERATE_NEVER` runtime только загружает эти готовые файлы.
 
 ## Usage
 
