@@ -6,7 +6,7 @@ namespace Ys\LaravelOdm\Tests\Fixtures\PackageDocuments;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 
 #[ODM\Document(collection: 'test_package_pages')]
-final class TestPackagePage
+class TestPackagePage
 {
     #[ODM\Id]
     private ?string $id = null;

@@ -262,12 +262,13 @@ final readonly class CreateArticleHandler
 ```
 
 Example document:
+No final for class!
 
 ```php
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 
 #[ODM\Document(collection: 'articles')]
-final class Article
+class Article
 {
     #[ODM\Id]
     private ?string $id = null;

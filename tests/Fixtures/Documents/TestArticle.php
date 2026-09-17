@@ -6,7 +6,7 @@ namespace Ys\LaravelOdm\Tests\Fixtures\Documents;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 
 #[ODM\Document(collection: 'test_articles')]
-final class TestArticle
+class TestArticle
 {
     #[ODM\Id]
     private ?string $id = null;
@@ -14,4 +14,3 @@ final class TestArticle
     #[ODM\Field(type: 'string')]
     private string $title = '';
 }
-
