@@ -5,6 +5,8 @@ namespace Ys\LaravelOdm\Tests\Fixtures;
 
 use Illuminate\Support\ServiceProvider;
 use Ys\LaravelOdm\ODM\DocumentPathRegistry;
+use Ys\LaravelOdm\ODM\SchemaOwnershipRegistry;
+use Ys\LaravelOdm\Tests\Fixtures\PackageDocuments\TestPackagePage;
 
 final class TestPackageDocumentPathServiceProvider extends ServiceProvider
 {
@@ -13,6 +15,12 @@ final class TestPackageDocumentPathServiceProvider extends ServiceProvider
         $this->callAfterResolving(
             DocumentPathRegistry::class,
             static fn(DocumentPathRegistry $registry) => $registry->addDocumentPath(__DIR__ . '/PackageDocuments'),
+        );
+        $this->callAfterResolving(
+            SchemaOwnershipRegistry::class,
+            static fn(SchemaOwnershipRegistry $registry) => $registry->registerDocument(
+                'fixture/pages', TestPackagePage::class, 'fixture:pages:prepare',
+            ),
         );
     }
 }

@@ -25,6 +25,7 @@ use Ys\LaravelOdm\Commands\LaravelUpdateCommand;
 use Ys\LaravelOdm\ODM\CacheAdapterFactory;
 use Ys\LaravelOdm\ODM\DocumentPathRegistry;
 use Ys\LaravelOdm\ODM\DocumentManagerFactory;
+use Ys\LaravelOdm\ODM\SchemaOwnershipRegistry;
 use function config;
 use const PHP_VERSION_ID;
 
@@ -41,6 +42,7 @@ class DoctrineMongoDBServiceProvider extends ServiceProvider
     {
         $this->mergeConfig();
         $this->registerDocumentPathRegistry();
+        $this->app->singleton(SchemaOwnershipRegistry::class);
         $this->registerDocumentManager();
         $this->registerConsoleCommands();
 

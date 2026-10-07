@@ -126,6 +126,8 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
         $hydratorDirectory = $runtimeDirectory . '/hydrators';
         $this->app['config']->set('mongodb.paths.hydrators.path', $hydratorDirectory);
         $this->app['config']->set('mongodb.paths.hydrators.namespace', 'LaravelOdmPackageHydrators');
+        $this->app['config']->set('mongodb.paths.proxies.path', $runtimeDirectory . '/proxies');
+        $this->app['config']->set('mongodb.paths.proxies.auto_generate', Configuration::AUTOGENERATE_FILE_NOT_EXISTS);
         $this->app['config']->set(
             'mongodb.paths.hydrators.auto_generate',
             Configuration::AUTOGENERATE_NEVER,
@@ -140,6 +142,11 @@ final class DoctrineMongoDBServiceProviderTest extends TestCase
             self::assertFalse($this->app->resolved(DocumentManager::class));
 
             $this->artisan('odm:generate:hydrators')->assertExitCode(0);
+            $this->artisan('odm:generate:proxies')->assertExitCode(0);
+
+            self::assertNotEmpty(iterator_to_array(new \FilesystemIterator($runtimeDirectory . '/proxies')));
+            self::assertInstanceOf(TestPackagePage::class, $this->app->make(DocumentManager::class)
+                ->getReference(TestPackagePage::class, '507f1f77bcf86cd799439011'));
 
             $pageHydrator = $hydratorDirectory
                 . '/YsLaravelOdmTestsFixturesPackageDocumentsTestPackagePageHydrator.php';

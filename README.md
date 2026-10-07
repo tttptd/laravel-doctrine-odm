@@ -22,6 +22,7 @@ This package started as a fork of [chefsplate/laravel-doctrine-odm](https://gith
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Document Path Registry](#document-path-registry)
+- [Владение схемой](#владение-схемой)
 - [Usage](#usage)
 - [Artisan Commands](#artisan-commands)
 - [Testing](#testing)
@@ -219,6 +220,104 @@ php artisan odm:generate:hydrators
 
 В production с `AUTOGENERATE_NEVER` runtime только загружает эти готовые файлы.
 
+## Владение схемой
+
+`Ys\LaravelOdm\ODM\SchemaOwnershipRegistry` позволяет пакету сохранить свою
+схему при общих Artisan-командах `odm:schema:create`, `odm:schema:update` и
+`odm:schema:drop`. Это отдельная регистрация: она не исключает документы из
+`DocumentPathRegistry`, metadata, чтения/записи и генерации proxies/hydrators.
+
+Точные публичные сигнатуры:
+
+```php
+public function registerDocument(
+    string $owner,
+    string $documentClass,
+    string $preparationCommand,
+): void;
+
+public function registerCollection(
+    string $owner,
+    string $database,
+    string $collection,
+    string $preparationCommand,
+): void;
+```
+
+`$owner` — стабильный идентификатор пакета или его схемы, например
+`vendor/package`. `$documentClass` — имя реально настроенного ODM-документа.
+`$preparationCommand` — существующая команда явной подготовки, которую оператор
+видит при отказе; интеграция её не запускает. Все значения обязательны и не
+могут быть пустыми.
+
+Регистрация выполняется в `register()` package provider через защищённый
+`ServiceProvider::callAfterResolving()`, до выполнения schema-команд:
+
+```php
+use Illuminate\Support\ServiceProvider;
+use Ys\LaravelOdm\ODM\DocumentPathRegistry;
+use Ys\LaravelOdm\ODM\SchemaOwnershipRegistry;
+
+final class PackageServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->callAfterResolving(
+            DocumentPathRegistry::class,
+            static fn(DocumentPathRegistry $registry) =>
+                $registry->addDocumentPath(__DIR__ . '/../Domain/Documents'),
+        );
+
+        $documentClass = config('package.documents.record', PackageRecord::class);
+        $this->callAfterResolving(
+            SchemaOwnershipRegistry::class,
+            static fn(SchemaOwnershipRegistry $registry) => $registry->registerDocument(
+                'vendor/package', $documentClass, 'package:schema:prepare',
+            ),
+        );
+    }
+}
+```
+
+Для коллекции без ODM-документа можно вызвать `registerCollection()` с
+фактическими именами базы и коллекции из конфигурации владельца. Имена не
+нормализуются и не заменяются базой по умолчанию интеграции. Регистрация документа
+разрешается по его текущим метаданным и `DocumentManager`: учитываются настроенные
+имена коллекций и отдельная база документа. Для GridFS, файлового хранилища MongoDB,
+защищаются обе физические коллекции файлового контейнера, `.files` и `.chunks`.
+
+Защита сопоставляется по фактической паре «база + коллекция», поэтому другой
+PHP-класс, сопоставленный той же коллекции, также пропускается. Общие команды выводят
+владельца и команду подготовки. Они не меняют индексы, validators и search
+indexes зарегистрированных схем. Опции `--collection`, `--index`,
+`--search-index`, `--background`, `--disable-validators`, `--skip-search-indexes`
+и параметры записи сохраняют штатную семантику для обычных схем.
+
+Адресный `--class` для защищённой схемы отказывает с ненулевым кодом до записи.
+`odm:schema:drop --db` отказывает при наличии зарегистрированных схем; адресное
+удаление базы обычного документа тоже запрещено, если эта база защищена.
+Штатный drop без выбора `--collection`, `--index` или `--search-index`
+включает удаление базы и потому также отказывает. Для общего удаления только
+обычных коллекций используйте `odm:schema:drop --collection`; существующее
+подтверждение удаления сохраняется.
+
+Повтор одинаковой регистрации допустим. Разные владельцы или разные команды
+подготовки одной физической коллекции считаются конфликтом. Все регистрации
+и mapping проверяются до первой операции общей команды, поэтому конфликт не
+оставляет частично изменённые обычные коллекции.
+
+Это граница трёх общих CLI-команд, а не запрет произвольной работы с MongoDB.
+Прямой `$documentManager->getSchemaManager()` сохраняет полный набор metadata
+для явной подготовки владельца. Boot, запрос приложения и Composer install
+не выполняют подготовку схемы. Граница описана в
+[ADR-0001](docs/adr/0001-schema-ownership.md).
+
+Минимальная планируемая версия для пакетов, использующих этот API:
+`tttptd/laravel-doctrine-odm:^0.1.5`. Релиз `0.1.5` пока не опубликован: до
+выпуска используйте точный Git commit из отчёта задачи в изолированной локальной
+интеграции. Успешная локальная проверка не доказывает наличие релиза в Registry.
+Требования PHP 8.2+, Laravel 12 и Doctrine ODM `^2.11.3` сохраняются.
+
 ## Usage
 
 Inject Doctrine `DocumentManager` directly when you need full ODM APIs:
@@ -324,7 +423,19 @@ The package uses PHPUnit 11 and Orchestra Testbench. The current tests cover:
 - cache adapter creation;
 - `PersistenceManagerDoctrine` delegation to Doctrine ODM.
 
-The integration tests do not require a running MongoDB server. They verify container/config/metadata behavior without opening a database connection.
+Обычные Feature-тесты проверяют контейнер, конфигурацию и metadata без подключения
+к MongoDB. Набор `MongoIntegration` проверяет сохранение схемы через реальные
+CLI-команды и MongoDB; по умолчанию он пропущен. Для локального запуска:
+
+```bash
+ODM_MONGO_TESTS=1 composer test
+```
+
+При необходимости задайте `ODM_MONGO_TEST_URI` для отдельного тестового сервера.
+Тесты создают уникальную базу `laravel_odm_schema_test_<PID>_<случайный token>`
+на сценарий, проверяют точное имя перед записью/удалением и удаляют только её.
+Имя рабочей или общей тестовой базы не принимается. В CI этот набор включён
+с отдельным MongoDB service; успешный локальный запуск не означает успех CI.
 
 ## Local Package Development
 

@@ -9,17 +9,21 @@ use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Ys\LaravelOdm\ODM\SchemaOwnershipRegistry;
 
 class LaravelDropCommand extends DropCommand
 {
     use DoctrineCommandWrapperTrait;
+    use SchemaCommandProtectionTrait;
 
     private DocumentManager $documentManager;
+    private SchemaOwnershipRegistry $schemaOwnershipRegistry;
 
-    public function __construct(DocumentManager $documentManager)
+    public function __construct(DocumentManager $documentManager, ?SchemaOwnershipRegistry $schemaOwnershipRegistry = null)
     {
         parent::__construct();
         $this->documentManager = $documentManager;
+        $this->schemaOwnershipRegistry = $schemaOwnershipRegistry ?? new SchemaOwnershipRegistry();
     }
 
     /**
@@ -27,6 +31,12 @@ class LaravelDropCommand extends DropCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $dropsDatabase = $input->getOption('db') || (
+            ! $input->getOption('collection') && ! $input->getOption('index') && ! $input->getOption('search-index')
+        );
+        if (! $this->prepareSchemaCommand($input, $output, $dropsDatabase)) {
+            return self::FAILURE;
+        }
         $question = new ConfirmationQuestion(
             '<error>This command will drop all collections. Are you sure you want to proceed? (type "yes" to confirm): </error>',
             false // Default answer is "no"
@@ -38,11 +48,8 @@ class LaravelDropCommand extends DropCommand
             return self::FAILURE;
         }
         
-        $doctrineCommand = new DropCommand();
+        $this->initHelper($this);
 
-        $this->initHelper($doctrineCommand);
-        $filteredInput = $this->removeCommandFromInputArgs($input, $doctrineCommand);
-
-        return $doctrineCommand->run($filteredInput, $output);
+        return parent::execute($input, $output);
     }
 }
